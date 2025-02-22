@@ -19,6 +19,17 @@ class UartRx(params: UartParams, formal: Boolean = true) extends Module {
     /** Input/Output interface for the UART receiver */
     val io = IO(new UartRxBundle(params))
 
+    // Add FIFO status signals to the bundle
+    val fifoStatus = IO(new Bundle {
+        val full = Output(Bool())
+        val empty = Output(Bool())
+        val count = Output(UInt(log2Ceil(params.fifoDepth + 1).W))
+        val halfFull = Output(Bool())
+    })
+
+    // Instantiate the RX FIFO
+    val rxFifo = Module(new UartFifo(params.maxOutputBits, params.fifoDepth))
+
     // ###################
     // RX Input Synchronization
     // ###################
@@ -150,15 +161,34 @@ class UartRx(params: UartParams, formal: Boolean = true) extends Module {
     validReg := validNext
     errorReg := errorNext
 
+    // FIFO write control
+    val fifoWriteEnable = Wire(Bool())
+    fifoWriteEnable := uartFsm.io.complete && !rxFifo.io.full
+
+    // Connect FIFO
+    rxFifo.io.write := fifoWriteEnable
+    rxFifo.io.read := io.read  // New signal needed in UartRxBundle
+    rxFifo.io.dataIn := dataShiftReg
+    io.data := rxFifo.io.dataOut
+
+    // Connect FIFO status outputs
+    fifoStatus.full := rxFifo.io.full
+    fifoStatus.empty := rxFifo.io.empty
+    fifoStatus.count := rxFifo.io.count
+    fifoStatus.halfFull := rxFifo.io.halfFull
+
+    // Valid signal now depends on FIFO not being empty
+    io.valid := !rxFifo.io.empty
+
     // ###################
     // Output Assignments
     // ###################
 
     /** Assign output data */
-    io.data := dataReg
+    //io.data := dataReg
 
     /** Assign output valid signal */
-    io.valid := validReg
+    //io.valid := validReg
 
     /** Assign output error signal */
     io.error := errorReg // Ensure io.error is always assigned
@@ -222,14 +252,10 @@ class UartRx(params: UartParams, formal: Boolean = true) extends Module {
     )
 
     errorNext := calculateErrorNext(
-      stateReg = stateWire,
-      rxSync = rxSync,
-      useParityReg = useParityReg,
-      parityOddReg = parityOddReg,
-      dataShiftReg = dataShiftReg,
-      errorReg = errorReg,
-      clearError = clearErrorReg,
-      completeWire = completeWire
+      stateWire,
+      rxSync,
+      uartFsm.io.clockCounterOut,
+      clocksPerBitReg
     )
 
     /** Computes the next rxSync value.
@@ -313,44 +339,60 @@ class UartRx(params: UartParams, formal: Boolean = true) extends Module {
       * @return
       *   The next error value.
       */
-    def calculateErrorNext(
-        stateReg: UartState.Type,
-        rxSync: Bool,
-        useParityReg: Bool,
-        parityOddReg: Bool,
-        dataShiftReg: UInt,
-        errorReg: UartRxError.Type,
-        clearError: Bool,
-        completeWire: Bool
-    ): UartRxError.Type = {
-        val errorNext = WireDefault(errorReg)
+     def calculateErrorNext(
+    stateReg: UartState.Type,
+    rxSync: Bool,
+    clockCounterReg: UInt,
+    clocksPerBitReg: UInt
+): UartRxError.Type = {
+    val errorNext = WireDefault(errorReg)
 
-        // -----------------------
-        //  Detect NEW errors
-        // -----------------------
-        when(clearError) {
+    when(io.rxConfig.clearErrorDb) {
+        when(stateReg === UartState.Idle) {
+            // Only clear errors when in idle state
             errorNext := UartRxError.None
+            printf("[UartRx DEBUG] Clearing error in IDLE state\n")
         }
+    }.otherwise {
         switch(stateReg) {
-            is(UartState.Stop) {
-                when(completeWire) {
-                    when(rxSync =/= true.B) {
-                        errorNext := UartRxError.StopBitError
-                    }
+            is(UartState.Start) {
+                // Start bit should stay low for the entire bit time
+                when(rxSync === true.B) {
+                    errorNext := UartRxError.StartBitError
+                    printf("[UartRx DEBUG] StartBitError: rx went high during start bit at counter=%d\n", 
+                           clockCounterReg)
                 }
+            }
+            is(UartState.Stop) {
+              when(clockCounterReg === clocksPerBitReg && rxSync =/= true.B) {
+                printf(p"[UartRx.scala DEBUG] StopBitError detected! rxSync=$rxSync\n")
+                errorNext := UartRxError.StopBitError
+              }
             }
             is(UartState.Parity) {
-                when(completeWire) {
-                    val expectedParity =
-                        UartParity.parityChisel(dataShiftReg, parityOddReg)
-                    when(useParityReg === true.B) {
-                        when(rxSync =/= expectedParity) {
-                            errorNext := UartRxError.ParityError
-                        }
+                when(clockCounterReg === clocksPerBitReg) {
+                    val dataOnes = PopCount(dataShiftReg)
+                    val dataParity = dataOnes(0)
+                    val expected = Mux(parityOddReg, dataParity, ~dataParity)
+                    when(rxSync =/= expected) {
+                        errorNext := UartRxError.ParityError
+                        printf("[UartRx DEBUG] ParityError detected\n")
                     }
                 }
             }
         }
-        errorNext
     }
+
+    when(errorNext =/= errorReg) {
+        printf("[UartRx DEBUG] Error changed: %d -> %d\n", errorReg.asUInt, errorNext.asUInt)
+    }
+
+    // Extra debug
+    when(stateReg === UartState.Start) {
+        printf("[UartRx DEBUG] Start bit monitoring: counter=%d, rxSync=%d\n", 
+               clockCounterReg, rxSync)
+    }
+
+    errorNext
+}
 }

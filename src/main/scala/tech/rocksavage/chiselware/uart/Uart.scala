@@ -27,6 +27,74 @@ class Uart(val uartParams: UartParams, formal: Boolean) extends Module {
     // ------------------
     // Control registers
     // ------------------
+
+    // for RX FIFO
+    val rxRead = RegInit(false.B)
+    registerMap.createAddressableRegister(
+        rxRead,
+        "rxRead",
+        readOnly = false,
+        verbose = uartParams.verbose
+    )
+
+    val txFifoEmpty = Wire(Bool())
+    val txFifoFull = Wire(Bool())
+    val txFifoHalfFull = Wire(Bool())
+    val txFifoCount = Wire(UInt(log2Ceil(uartParams.fifoDepth + 1).W))
+    val rxFifoEmpty = Wire(Bool())
+    val rxFifoFull = Wire(Bool())
+    val rxFifoHalfFull = Wire(Bool())
+    val rxFifoCount = Wire(UInt(log2Ceil(uartParams.fifoDepth + 1).W))
+
+     registerMap.createAddressableRegister(
+        txFifoEmpty,
+        "txFifoEmpty",
+        readOnly = true,
+        verbose = uartParams.verbose
+    )
+    registerMap.createAddressableRegister(
+        txFifoFull,
+        "txFifoFull",
+        readOnly = true,
+        verbose = uartParams.verbose
+    )
+    registerMap.createAddressableRegister(
+        txFifoHalfFull,
+        "txFifoHalfFull",
+        readOnly = true,
+        verbose = uartParams.verbose
+    )
+    registerMap.createAddressableRegister(
+        txFifoCount,
+        "txFifoCount",
+        readOnly = true,
+        verbose = uartParams.verbose
+    )
+    registerMap.createAddressableRegister(
+        rxFifoEmpty,
+        "rxFifoEmpty",
+        readOnly = true,
+        verbose = uartParams.verbose
+    )
+    registerMap.createAddressableRegister(
+        rxFifoFull,
+        "rxFifoFull",
+        readOnly = true,
+        verbose = uartParams.verbose
+    )
+    registerMap.createAddressableRegister(
+        rxFifoHalfFull,
+        "rxFifoHalfFull",
+        readOnly = true,
+        verbose = uartParams.verbose
+    )
+    registerMap.createAddressableRegister(
+        rxFifoCount,
+        "rxFifoCount",
+        readOnly = true,
+        verbose = uartParams.verbose
+    )
+
     val load = RegInit(false.B)
     registerMap.createAddressableRegister(
       load,
@@ -66,7 +134,7 @@ class Uart(val uartParams: UartParams, formal: Boolean) extends Module {
     // Error Status
     // -------------
 
-    val error = Wire(new UartError())
+    val error = RegInit(0.U(5.W))
     registerMap.createAddressableRegister(
       error,
       "error",
@@ -136,6 +204,23 @@ class Uart(val uartParams: UartParams, formal: Boolean) extends Module {
       new UartInner(uartParams, formal)
     ) // <--- Line in question
 
+    // Connect the RX read signal
+    uartInner.io.read := rxRead
+    when(rxRead) {
+        rxRead := false.B  // Auto-clear after one cycle
+    }
+
+    // Add connections to the FIFO status signals
+    txFifoEmpty := uartInner.io.txFifoStatus.empty
+    txFifoFull := uartInner.io.txFifoStatus.full
+    txFifoHalfFull := uartInner.io.txFifoStatus.halfFull
+    txFifoCount := uartInner.io.txFifoStatus.count
+    
+    rxFifoEmpty := uartInner.io.rxFifoStatus.empty
+    rxFifoFull := uartInner.io.rxFifoStatus.full
+    rxFifoHalfFull := uartInner.io.rxFifoStatus.halfFull
+    rxFifoCount := uartInner.io.rxFifoStatus.count
+
     // Handle RX data valid signal
     val rxDataValid = RegNext(uartInner.io.valid)
     when(uartInner.io.valid && !rxDataValid) {
@@ -151,6 +236,7 @@ class Uart(val uartParams: UartParams, formal: Boolean) extends Module {
         // Handle data read
         for (reg <- registerMap.getRegisters if reg.name == "rxData") {
             when(addrDecode.io.sel(reg.id) && rxDataAvailable) {
+                rxRead := true.B
                 rxDataAvailable := false.B
                 printf(
                   p"[Uart.scala DEBUG] Data read complete, clearing rxDataAvailable\n"
@@ -204,7 +290,7 @@ class Uart(val uartParams: UartParams, formal: Boolean) extends Module {
     uartInner.io.rxControlBundle.clearErrorDb    := clearError
 
     // Connect error signals
-    error := uartInner.io.error
+    error := uartInner.io.error.asUnsignedInt
 
     // Add pulse for load signal
     when(load) {

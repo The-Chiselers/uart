@@ -36,12 +36,12 @@ class FullDuplexUart(p: UartParams) extends Module {
     io.uart2_tx := uart2.io.tx
 
     // Connect external RX pins for potential external input
-    when(io.uart1_rx =/= RegNext(io.uart1_rx)) {
-        uart1.io.rx := io.uart1_rx
-    }
-    when(io.uart2_rx =/= RegNext(io.uart2_rx)) {
-        uart2.io.rx := io.uart2_rx
-    }
+    // when(io.uart1_rx =/= RegNext(io.uart1_rx)) {
+    //     uart1.io.rx := io.uart1_rx
+    // }
+    // when(io.uart2_rx =/= RegNext(io.uart2_rx)) {
+    //     uart2.io.rx := io.uart2_rx
+    // }
 
     // Getter methods for accessing internal UARTs
     def getUart1: Uart = uart1

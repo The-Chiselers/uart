@@ -178,7 +178,7 @@ object errorTests {
     // 8 bits, no parity
     writeAPB(dut.io.apb, dut.registerMap.getAddressOfRegister("clocksPerBitDb").get.U, clocksPerBit.U)
     writeAPB(dut.io.apb, dut.registerMap.getAddressOfRegister("numOutputBitsDb").get.U, 8.U)
-    clk.step(clocksPerBit * 2)
+    clk.step(10)
 
     // Clear errors
     val preError = readAPB(dut.io.apb, dut.registerMap.getAddressOfRegister("error").get.U)

@@ -22,9 +22,22 @@ class UartInner(params: UartParams, formal: Boolean = true) extends Module {
 
     // Connect the RX side
     rxModule.io.rx   := io.rx
+    rxModule.io.read := io.read 
     io.dataOut       := rxModule.io.data
     io.valid         := rxModule.io.valid
     io.error.rxError := rxModule.io.error
+    io.error.txError := txModule.io.error
+
+    // Connect FIFO status signals
+    io.rxFifoStatus.full := rxModule.fifoStatus.full
+    io.rxFifoStatus.empty := rxModule.fifoStatus.empty
+    io.rxFifoStatus.count := rxModule.fifoStatus.count
+    io.rxFifoStatus.halfFull := rxModule.fifoStatus.halfFull
+
+    io.txFifoStatus.full := txModule.fifoStatus.full
+    io.txFifoStatus.empty := txModule.fifoStatus.empty
+    io.txFifoStatus.count := txModule.fifoStatus.count
+    io.txFifoStatus.halfFull := txModule.fifoStatus.halfFull
 
     // Connect control signals to RX module
     rxModule.io.rxConfig.clocksPerBitDb  := io.rxControlBundle.clocksPerBitDb

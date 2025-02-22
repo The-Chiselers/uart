@@ -70,6 +70,55 @@ class UartTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
 
         name match {
 
+             // Add new FIFO test cases
+            case "txFifoOverflow" =>
+                it should "handle TX FIFO overflow correctly" in {
+                    test(new UartTx(uartParams))
+                        .withAnnotations(backendAnnotations) { dut =>
+                            fifoIntegrationTests.txFifoOverflowTest(dut, uartParams)
+                        }
+                }
+
+            case "rxFifoOverflow" =>
+                it should "handle RX FIFO overflow correctly" in {
+                    test(new UartRx(uartParams))
+                        .withAnnotations(backendAnnotations) { dut =>
+                            fifoIntegrationTests.rxFifoOverflowTest(dut, uartParams)
+                        }
+                }
+
+            case "burstTransfer" =>
+                it should "handle burst transfers correctly" in {
+                    test(new FullDuplexUart(uartParams))
+                        .withAnnotations(backendAnnotations) { dut =>
+                            fifoIntegrationTests.burstTransferTest(dut, uartParams)
+                        }
+                }
+
+            case "fifoStatus" =>
+                it should "correctly report FIFO status" in {
+                    test(new FullDuplexUart(uartParams))
+                        .withAnnotations(backendAnnotations) { dut =>
+                            fifoIntegrationTests.fifoStatusTest(dut, uartParams)
+                        }
+                }
+
+            case "backToBackTransfer" =>
+                it should "handle back-to-back transfers correctly" in {
+                    test(new FullDuplexUart(uartParams))
+                        .withAnnotations(backendAnnotations) { dut =>
+                            fifoIntegrationTests.backToBackTransferTest(dut, uartParams)
+                        }
+                }
+
+            case "fifoErrorHandling" =>
+                it should "handle FIFO errors correctly" in {
+                    test(new FullDuplexUart(uartParams))
+                        .withAnnotations(backendAnnotations) { dut =>
+                            fifoIntegrationTests.fifoErrorHandlingTest(dut, uartParams)
+                        }
+                }
+
             // Add Random Test Cases
             case "randomBaudRate" =>
                 it should "handle random valid baud rates" in {
@@ -287,6 +336,49 @@ class UartTest extends AnyFlatSpec with ChiselScalatestTester with Matchers {
         transmissionTestsFull(params)
         fullDuplexTestsFull(params)
         randomTestsFull(params)
+        fifoTestsFull(params)
+    }
+
+    def fifoTestsFull(params: UartParams): Unit = {
+        it should "handle TX FIFO overflow correctly" in {
+            test(new UartTx(params)).withAnnotations(backendAnnotations) { dut =>
+                fifoIntegrationTests.txFifoOverflowTest(dut, params)
+            }
+        }
+
+        it should "handle RX FIFO overflow correctly" in {
+            test(new UartRx(params)).withAnnotations(backendAnnotations) { dut =>
+                fifoIntegrationTests.rxFifoOverflowTest(dut, params)
+            }
+        }
+
+        it should "handle burst transfers correctly" in {
+            test(new FullDuplexUart(params))
+                .withAnnotations(backendAnnotations) { dut =>
+                    fifoIntegrationTests.burstTransferTest(dut, params)
+                }
+        }
+
+        it should "correctly report FIFO status" in {
+            test(new FullDuplexUart(params))
+                .withAnnotations(backendAnnotations) { dut =>
+                    fifoIntegrationTests.fifoStatusTest(dut, params)
+                }
+        }
+
+        it should "handle back-to-back transfers correctly" in {
+            test(new FullDuplexUart(params))
+                .withAnnotations(backendAnnotations) { dut =>
+                    fifoIntegrationTests.backToBackTransferTest(dut, params)
+                }
+        }
+
+        it should "handle FIFO errors correctly" in {
+            test(new FullDuplexUart(params))
+                .withAnnotations(backendAnnotations) { dut =>
+                    fifoIntegrationTests.fifoErrorHandlingTest(dut, params)
+                }
+        }
     }
 
     def randomTestsFull(params: UartParams): Unit = {

@@ -28,6 +28,7 @@ case class UartParams(
     maxClocksPerBit: Int = 100000,
     maxOutputBits: Int = 8,
     syncDepth: Int = 2,
+    fifoDepth: Int = 2, 
     parity: Boolean = false,
     verbose: Boolean = false
 ) {

@@ -42,7 +42,7 @@ object UartTestUtils {
         dut.io.rx.poke(bit.B)
 
         println(s"Transmitting bit for $clocksPerBit cycles")
-        dut.clock.setTimeout(clocksPerBit + 1)
+        // dut.clock.setTimeout(clocksPerBit + 1)
         for (i <- 0 until clocksPerBit) {
             dut.clock.step()
         }

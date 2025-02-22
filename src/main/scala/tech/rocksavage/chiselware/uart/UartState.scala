@@ -5,5 +5,5 @@ package tech.rocksavage.chiselware.uart
 import chisel3._
 
 object UartState extends ChiselEnum {
-  val Idle, Start, Data, Parity, Stop = Value
+  val Idle, Load, Start, Data, Parity, Stop = Value
 }

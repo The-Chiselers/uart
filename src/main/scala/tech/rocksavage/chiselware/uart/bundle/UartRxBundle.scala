@@ -9,6 +9,7 @@ import tech.rocksavage.chiselware.uart.param.UartParams
 // from the perspective of the UART which is receiving data
 class UartRxBundle(params: UartParams) extends Bundle {
     val rx    = Input(Bool())
+    val read = Input(Bool())
     val data  = Output(UInt(params.maxOutputBits.W))
     val valid = Output(Bool())
 

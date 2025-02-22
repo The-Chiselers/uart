@@ -63,42 +63,42 @@ object fullDuplexTests {
   /**
    * Basic bidirectional communication test
    */
- def bidirectionalCommunicationTest(dut: FullDuplexUart, params: UartParams): Unit = {
-    implicit val clock: Clock = dut.clock
-    clock.setTimeout(0)
+  def bidirectionalCommunicationTest(dut: FullDuplexUart, params: UartParams): Unit = {
+      implicit val clock: Clock = dut.clock
+      clock.setTimeout(0)
 
-    val clocksPerBit = 217
+      val clocksPerBit = 217
 
-    // Configure both UARTs
-    setupUart(dut.io.uart1Apb, dut.getUart1, clocksPerBit)
-    setupUart(dut.io.uart2Apb, dut.getUart2, clocksPerBit)
+      // Configure both UARTs
+      setupUart(dut.io.uart1Apb, dut.getUart1, clocksPerBit)
+      setupUart(dut.io.uart2Apb, dut.getUart2, clocksPerBit)
 
-    val dataFromUart1 = "Hello"
-    val dataFromUart2 = "World"
+      val dataFromUart1 = "Hello"
+      val dataFromUart2 = "World"
 
-    for (i <- 0 until math.min(dataFromUart1.length, dataFromUart2.length)) {
-      // Send from UART1 and wait for UART2 to receive
-      sendChar(dut.io.uart1Apb, dut.getUart1, dataFromUart1(i), clocksPerBit)
-      pollForRxData(dut.io.uart2Apb, dut.getUart2) match {
-        case Some(uart2Received) =>
-          assert(uart2Received == dataFromUart1(i),
-            f"UART2 received wrong data: got ${uart2Received}%c, expected ${dataFromUart1(i)}%c")
-        case None =>
-          assert(false, "UART2 did not receive data in time")
+      for (i <- 0 until math.min(dataFromUart1.length, dataFromUart2.length)) {
+        // Send from UART1 and wait for UART2 to receive
+        sendChar(dut.io.uart1Apb, dut.getUart1, dataFromUart1(i), clocksPerBit)
+        pollForRxData(dut.io.uart2Apb, dut.getUart2) match {
+          case Some(uart2Received) =>
+            assert(uart2Received == dataFromUart1(i),
+              f"UART2 received wrong data: got ${uart2Received}%c, expected ${dataFromUart1(i)}%c")
+          case None =>
+            assert(false, "UART2 did not receive data in time")
+        }
+
+        // Send from UART2 and wait for UART1 to receive
+        sendChar(dut.io.uart2Apb, dut.getUart2, dataFromUart2(i), clocksPerBit)
+        pollForRxData(dut.io.uart1Apb, dut.getUart1) match {
+          case Some(uart1Received) =>
+            println(s"UART1 received data: ${uart1Received.toInt}")
+            assert(uart1Received == dataFromUart2(i),
+              f"UART1 received wrong data: got ${uart1Received}%c, expected ${dataFromUart2(i)}%c")
+          case None =>
+            assert(false, "UART1 did not receive data in time")
+        }
       }
-
-      // Send from UART2 and wait for UART1 to receive
-      sendChar(dut.io.uart2Apb, dut.getUart2, dataFromUart2(i), clocksPerBit)
-      pollForRxData(dut.io.uart1Apb, dut.getUart1) match {
-        case Some(uart1Received) =>
-          println(s"UART1 received data: ${uart1Received.toInt}")
-          assert(uart1Received == dataFromUart2(i),
-            f"UART1 received wrong data: got ${uart1Received}%c, expected ${dataFromUart2(i)}%c")
-        case None =>
-          assert(false, "UART1 did not receive data in time")
-      }
-    }
-}
+  }
   /**
    * Tests simultaneous transmission from both UARTs
    */
