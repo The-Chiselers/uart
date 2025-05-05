@@ -5,6 +5,16 @@ ThisBuild / version := "0.1.0"
 ThisBuild / organization := "tech.rocksavage"
 ThisBuild / organizationName := "Rocksavage Technology"
 
+// --- New ---
+inThisBuild(
+  List(
+    semanticdbEnabled := true, // generate .semanticdb files :contentReference[oaicite:0]{index=0}
+    semanticdbVersion := scalafixSemanticdb.revision, // match Scalafix’s expected version :contentReference[oaicite:1]{index=1}
+    scalacOptions += "-Yrangepos" // required by semanticdb-scalac :contentReference[oaicite:2]{index=2}
+  )
+)
+// -----------
+
 Test / parallelExecution := false
 
 lazy val chisel_module_runner = RootProject(
@@ -45,10 +55,10 @@ lazy val root = (project in file("."))
     addCompilerPlugin(
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     ),
-    // (make sure you ran `sbt publishLocal` in chiselware_lints first)
+    // --- NEW ---
     scalafixDependencies += "tech.rocksavage" %% "chiselware_lints" % "0.1.0",
-    // === NEW: run scalafix on every compilation ===
     scalafixOnCompile := true
+    // -----------
   )
   .dependsOn(
     chisel_module_runner,
