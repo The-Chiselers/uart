@@ -1,0 +1,5 @@
+<scalastyle>
+    <name>Default Styles</name>
+    <url>http://www.scalastyle.org/</url>
+    <check level="error" class="org.scalastyle.scalariform.PublicMethodsHaveTypeChecker"/>
+</scalastyle>
