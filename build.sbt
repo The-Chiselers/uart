@@ -6,6 +6,8 @@ ThisBuild / organization := "tech.rocksavage"
 ThisBuild / organizationName := "Rocksavage Technology"
 
 // --- New ---
+// need to run: `git submodule add https://github.com/nickrallison/chiselware_lints.git chiselware_lints`
+lazy val chiselwareLints = RootProject(file("chiselware_lints"))
 inThisBuild(
   List(
     semanticdbEnabled := true, // generate .semanticdb files :contentReference[oaicite:0]{index=0}
@@ -37,6 +39,9 @@ lazy val dynamicfifo_one_cycle = RootProject(
   uri("https://github.com/The-Chiselers/dynamicfifo_one_cycle.git#main")
 )
 lazy val root = (project in file("."))
+// --- New ---
+  .dependsOn(chiselwareLints)
+  // -----------
   .settings(
     name := "uart",
     Test / publishArtifact := true,
@@ -56,7 +61,7 @@ lazy val root = (project in file("."))
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     ),
     // --- NEW ---
-    scalafixDependencies += "tech.rocksavage" %% "chiselware_lints" % "0.1.0",
+    scalafixDependencies += "tech.rocksavage" %% "chiselware_lints" % (chiselwareLints / version).value,
     scalafixOnCompile := true
     // -----------
   )
