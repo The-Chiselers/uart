@@ -20,13 +20,11 @@ class Uart(val uartParams: UartParams, formal: Boolean) extends Module {
   val dataWidth = uartParams.dataWidth
   val addressWidth = uartParams.addressWidth
   val wordWidth = uartParams.wordWidth
-
-  println("test")
-
+  
   var test_var = "true"
   test_var = "false"
 
-  println(test_var)
+  println(test_var);
 
   val io = IO(new Bundle {
     val apb = new ApbBundle(ApbParams(dataWidth, addressWidth))
